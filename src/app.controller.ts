@@ -1,10 +1,12 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
 import { z } from 'zod';
 import { ZodValidationPipe } from './pipes/zod-validation-pipe';
+import { get } from 'http';
 
 const regex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
 
 const createProducsBodySchema = z.object({
+  id: z.number().int().positive(),
   name: z.string().min(5).max(20),
   modelo: z.string().min(3).max(10),
   dateManufacture: z.string().date(),
@@ -19,10 +21,56 @@ type CreateProductBodySchema = z.infer<typeof createProducsBodySchema>;
 
 @Controller("/product")
 export class AppController {
-  constructor() {}
+
+  products: CreateProductBodySchema[] = [];
+  constructor() { }
 
   @Post()
-  create(@Body(bodyValidationPipe) Body: CreateProductBodySchema): string {
-    return bodyValidationPipe.transform(Body);
+  @HttpCode(201)
+  create(@Body(bodyValidationPipe) body: CreateProductBodySchema): string {
+    const idExist = this.products.find(product => product.id === body.id);
+
+    if (idExist) {
+      return "ID já existe!";
+    }
+    
+    
+    this.products.push(body);
+    return "Produto criado com sucesso!";
+  }
+
+  @Get()
+  findAll(): CreateProductBodySchema[] {
+    return this.products;
+  }
+
+  @Put(':id')
+  @HttpCode(200)
+  update(@Param('id') id: string, @Body(bodyValidationPipe) body: CreateProductBodySchema): string {
+    const productId = parseInt(id);
+    const productIndex = this.products.findIndex(product => product.id === productId);
+
+    if (productIndex !== -1) {
+      this.products[productIndex] = body;
+      return "Produto atualizado com sucesso!";
+    } else {
+      return "Produto não encontrado.";
+    }
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  delete(@Param('id') id: string): string {
+    const productId = parseInt(id);
+    const productIndex = this.products.findIndex(product => product.id === productId);
+
+    if (productIndex !== -1) {
+
+      this.products.splice(productIndex, 1);
+      return "Produto removido com sucesso!";
+    } else {
+
+      return "Produto não encontrado.";
+    }
   }
 }
