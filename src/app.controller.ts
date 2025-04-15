@@ -33,7 +33,7 @@ export class AppController {
     if (idExist) {
       return "ID já existe!";
     }
-    
+
     
     this.products.push(body);
     return "Produto criado com sucesso!";
@@ -42,6 +42,17 @@ export class AppController {
   @Get()
   findAll(): CreateProductBodySchema[] {
     return this.products;
+  }
+
+  @Get(':id')
+  findByID(@Param('id') id: string) {
+    const producrExist = this.products.find(product => product.id === parseInt(id));
+
+    if (producrExist) {
+      return producrExist;
+    } else {
+      return "Produto não encontrado.";
+    }
   }
 
   @Put(':id')
@@ -60,7 +71,7 @@ export class AppController {
 
   @Delete(':id')
   @HttpCode(204)
-  delete(@Param('id') id: string): string {
+  deleteById(@Param('id') id: string): string {
     const productId = parseInt(id);
     const productIndex = this.products.findIndex(product => product.id === productId);
 
