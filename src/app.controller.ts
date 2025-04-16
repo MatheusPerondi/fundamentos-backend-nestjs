@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put } from '@nestjs/common';
 import { z } from 'zod';
 import { ZodValidationPipe } from './pipes/zod-validation-pipe';
 import { get } from 'http';
@@ -15,9 +15,32 @@ const createProducsBodySchema = z.object({
   email: z.string().email(),
   cpf: z.string().regex(regex),
 })
+
+const updateProductcsBodySchema = z.object({
+  name: z.string().min(5).max(20).optional(),
+  modelo: z.string().min(3).max(10).optional(),
+  dateManufacture: z.string().date().optional(),
+  year: z.number().min(1900).max(2025).optional(),
+  brand: z.string().min(5).max(20).optional(),
+  email: z.string().email().optional(),
+  cpf: z.string().regex(regex).optional(),
+});
+
+const patchProductStatusSchema = z.object({
+  status: z.enum(['disponivel', 'indisponivel']).optional(),
+})
+
+const patchProductBodySchema = new ZodValidationPipe(patchProductStatusSchema);
+
+const updateBodyValidationPipe = new ZodValidationPipe(updateProductcsBodySchema);
+
 const bodyValidationPipe = new ZodValidationPipe(createProducsBodySchema);
 
+type PatchProductBodySchema = z.infer<typeof patchProductStatusSchema>;
+
 type CreateProductBodySchema = z.infer<typeof createProducsBodySchema>;
+
+type UpdateProductBodySchema = z.infer<typeof updateProductcsBodySchema>;
 
 @Controller("/product")
 export class AppController {
@@ -57,12 +80,18 @@ export class AppController {
 
   @Put(':id')
   @HttpCode(200)
-  update(@Param('id') id: string, @Body(bodyValidationPipe) body: CreateProductBodySchema): string {
+  update(@Param('id') id: string, @Body(updateBodyValidationPipe) body: UpdateProductBodySchema): string {
     const productId = parseInt(id);
     const productIndex = this.products.findIndex(product => product.id === productId);
 
     if (productIndex !== -1) {
-      this.products[productIndex] = body;
+      const updatedProduct = { 
+        ...this.products[productIndex],  
+        ...body,                         
+        id: this.products[productIndex].id  
+      };
+
+      this.products[productIndex] = updatedProduct;
       return "Produto atualizado com sucesso!";
     } else {
       return "Produto não encontrado.";
@@ -81,6 +110,26 @@ export class AppController {
       return "Produto removido com sucesso!";
     } else {
 
+      return "Produto não encontrado.";
+    }
+  }
+
+  @Patch(':id')
+  @HttpCode(200)
+  updateStatus(@Param('id') id: string, @Body(patchProductBodySchema) body: PatchProductBodySchema): string {
+    const productId = parseInt(id);
+    const productIndex = this.products.findIndex(product => product.id === productId);
+
+    if (productIndex !== -1) {
+      const updatedProduct = { 
+        ...this.products[productIndex],  
+        ...body,                         
+        status: body.status 
+      };
+
+      this.products[productIndex] = updatedProduct;
+      return "Produto atualizado com sucesso!";
+    } else {
       return "Produto não encontrado.";
     }
   }
