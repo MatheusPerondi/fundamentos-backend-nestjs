@@ -5,6 +5,12 @@ import { get } from 'http';
 
 const regex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
 
+enum status {
+  APROVADO = "APROVADO",
+  NEGADO = "NEGADO",
+  PENDENTE = "PENDETE",
+}
+
 const createProducsBodySchema = z.object({
   id: z.number().int().positive(),
   name: z.string().min(5).max(20),
@@ -14,6 +20,7 @@ const createProducsBodySchema = z.object({
   brand: z.string().min(5).max(20),
   email: z.string().email(),
   cpf: z.string().regex(regex),
+  status: z.nativeEnum(status).default(status.PENDENTE),
 })
 
 const updateProductcsBodySchema = z.object({
@@ -27,7 +34,7 @@ const updateProductcsBodySchema = z.object({
 });
 
 const patchProductStatusSchema = z.object({
-  status: z.enum(['disponivel', 'indisponivel']).optional(),
+  status: z.enum([status.APROVADO, status.NEGADO]),
 })
 
 const patchProductBodySchema = new ZodValidationPipe(patchProductStatusSchema);
